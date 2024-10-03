@@ -5,10 +5,16 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.String,
         required: true
     },
-    incharge: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'employee'
-    },
+    incharge:
+        [{
+            employee: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'employee'
+            },
+            active: {
+                type: Boolean
+            }
+        }],
     created_date: {
         type: mongoose.Schema.Types.Date,
         default: new Date()
@@ -33,7 +39,14 @@ const orderSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'stages'
         }
-    ]
+    ],
+    closed_by: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+    },
+    closed_date: {
+        type: mongoose.Schema.Types.Date,
+    }
 })
 
 const stagesSchema = new mongoose.Schema(
@@ -43,11 +56,34 @@ const stagesSchema = new mongoose.Schema(
             ref: 'order',
             default: ''
         },
+        next_stage: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'stages',
+            default: null
+        },
+        prev_stage: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'stages',
+            default: null
+        },
+        can_add_material: {
+            type: Boolean,
+            default: false
+        },
+        goodQuality: {
+            type: Number
+        },
+        badQuantity: {
+            type: Number
+        },
         confimation_no: {
             type: mongoose.Schema.Types.String
         },
         stage_name: {
             type: mongoose.Schema.Types.String
+        },
+        coments: {
+            type: String
         },
         stage_description: {
             type: mongoose.Schema.Types.String
@@ -61,13 +97,19 @@ const stagesSchema = new mongoose.Schema(
                 material: {
                     type: mongoose.Schema.Types.String,
                 },
+                part_number: {
+                    type: mongoose.Schema.Types.String,
+                },
                 machinery: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: 'machinery'
+                    type: String
                 },
                 scannedTime: {
                     type: mongoose.Schema.Types.Date,
                     default: new Date()
+                },
+                incharge: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'employee'
                 }
             }
         ],

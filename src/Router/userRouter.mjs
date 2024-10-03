@@ -36,15 +36,15 @@ userRouter.post('/user', imageUpload.single('profile'), singleImagePath, async (
         }
         const lastEmp = await userModel.findOne().sort({ _id: -1 }).exec()
 
-        let EmpId = ''
-        if (lastEmp) {
-            let num = Number(lastEmp.empId.slice(-5,)) + 1
-            let newNum = `GEBBA` + String(num).padStart(5, '0')
-            EmpId = newNum
-        }
-        else {
-            EmpId = 'GEBBA00001'
-        }
+        // let EmpId = ''
+        // if (lastEmp) {
+        //     let num = Number(lastEmp.empId.slice(-5,)) + 1
+        //     let newNum = `GEBBA` + String(num).padStart(5, '0')
+        //     EmpId = newNum
+        // }
+        // else {
+        //     EmpId = 'GEBBA00001'
+        // }
         let mailData = {
             mail: body.email,
             subject: `Employee creation at GEBBA in ${getCurrentDate()} `,
@@ -63,7 +63,6 @@ userRouter.post('/user', imageUpload.single('profile'), singleImagePath, async (
         }
         const empObj = new userModel(body)
         empObj.status = 'active'
-        empObj.empId = EmpId
         empObj.password = hashPassword(empObj.password)
         const savedObj = await empObj.save()
 

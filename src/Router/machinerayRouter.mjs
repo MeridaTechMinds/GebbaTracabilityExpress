@@ -10,7 +10,7 @@ machineryRouter.post('/machinery', async (request, response) => {
     try {
         const machineryObj = new machineryModal(body)
         const savedobj = await machineryObj.save()
-        return response.send()
+        return response.send(savedobj)
 
     } catch (error) {
         console.log(error);
@@ -37,3 +37,20 @@ machineryRouter.get('/machinery/:id?', async (request, response) => {
 })
 
 //update the machinery
+machineryRouter.put('/machinery', async (request, response) => {
+    let { body } = request
+    try {
+        let updateValue = await machineryModal.findOneAndUpdate(
+            { _id: body.id },
+            { $set: body },
+            { new: true, runValidators: true })
+        if (updateValue)
+            return response.send(updateValue)
+        return response.status(400).send(updateValue)
+
+    } catch (error) {
+        console.log(error);
+        return response.status(400).send(error)
+
+    }
+})

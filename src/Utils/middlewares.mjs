@@ -1,6 +1,8 @@
+import { normalMail } from "./mailSender.mjs";
+
 export const loggging = (request, response, next) => {
     console.log(
-        `${request.method}:: ${process.env.PROTOCAL}://${request.get('host')}/${request.url}`);
+        `${request.method}:: ${process.env.PROTOCAL}://${request.get('host')}${request.url}`);
     next();
 }
 export const getCurrentDate = () => {
@@ -15,4 +17,13 @@ export const getCurrentDate = () => {
         hour12: true // 12-hour clock format with AM/PM
     });
     return formattedDate
+}
+
+export const autoMailer = async () => {
+    const bodymail = {
+        mail: 'madhavan1312000@gmail.com',
+        subject: `Hellow da venna ${getCurrentDate()} `,
+        text: 'Poda venna '
+    }
+    await normalMail(bodymail)
 }

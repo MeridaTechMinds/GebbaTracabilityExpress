@@ -3,7 +3,8 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import mongoose from "mongoose"
 import { indexRouter } from "./Router/indexRouter.mjs"
-import { getCurrentDate, loggging } from "./Utils/middlewares.mjs"
+import { autoMailer, getCurrentDate, loggging } from "./Utils/middlewares.mjs"
+import { normalMail } from "./Utils/mailSender.mjs"
 
 
 const app = express()
@@ -27,6 +28,9 @@ app.use('/api', indexRouter)
 app.get('/', (req, res) => {
     return res.send('Welcome to the server!');
 });
+// setInterval(() => {
+//     autoMailer()
+// }, 10000);
 
 app.listen(port, () => {
     console.log(`Server running on the port : ${port} `);

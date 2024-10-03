@@ -2,8 +2,17 @@ import { request, response, Router } from "express";
 import { orderModel, stageModel } from "../Model/orderModel.mjs";
 import { userModel } from "../Model/userModel.mjs";
 import path from "path";
+import { normalMail } from "../Utils/mailSender.mjs";
+import { getCurrentDate } from "../Utils/middlewares.mjs";
+import dotenv from 'dotenv'
+
+
+
+
+
 
 export const orderRouter = Router()
+dotenv.config()
 //post the data
 orderRouter.post('/order', async (request, response) => {
     const { body } = request
@@ -17,13 +26,20 @@ orderRouter.post('/order', async (request, response) => {
         console.log(stagesArray);
 
         let collectedIds = []
-        if (stagesArray && stagesArray.length > 0)
+        if (stagesArray && stagesArray.length > 0) {
             for (let obj of stagesArray) {
                 let modelObj = new stageModel(obj);
                 modelObj.orderId = savedOrderObj._id;
                 let savedObj = await modelObj.save();
                 collectedIds.push(savedObj._id);
             }
+            for (let i = 0; i < collectedIds.length; i++) {
+                let prevId = i > 0 ? collectedIds[i - 1] : null
+                let nextId = i < (collectedIds.length - 1) ? collectedIds[i + 1] : null
+                await stageModel.findByIdAndUpdate(collectedIds[i], { prev_stage: prevId, next_stage: nextId })
+            }
+            await stageModel.findByIdAndUpdate(collectedIds[0], { can_add_material: true })
+        }
         console.log(collectedIds);
 
         savedOrderObj.Stages = collectedIds
@@ -63,10 +79,33 @@ orderRouter.put('/order/:id', async (request, response) => {
                     collectedIds.push(updateStage._id)
                 }
             }
+            // To handle the prev and next
+            for (let i = 0; i < collectedIds.length; i++) {
+                let prevId = i > 0 ? collectedIds[i - 1] : null
+                let nextId = i < (collectedIds.length - 1) ? collectedIds[i + 1] : null
+                await stageModel.findByIdAndUpdate(collectedIds[i], { prev_stage: prevId, next_stage: nextId })
+            }
         }
+
         body.Stages = collectedIds
         const updateOrder = await orderModel.findByIdAndUpdate(id, { $set: body },
-            { new: true })
+            { new: true }).populate([
+                { path: 'closed_by' }
+            ])
+        // Closed order
+        if (body.status == 'close') {
+            let mailObj = {
+                mail: process.env.MAIL,
+                text: `Dear Admin
+                Order have been Closed.
+                Order Id : ${updateOrder.orderId},
+                Closed By Employee : ${updateOrder.closed_by.emp_name}(${updateOrder.closed_by.empId})`,
+
+                subject: `Order ${updateOrder.orderId} Closed ${getCurrentDate()} `
+            }
+            await normalMail(mailObj)
+
+        }
         return response.send("Updated")
     } catch (error) {
         console.log(error);
@@ -85,11 +124,20 @@ orderRouter.get('/order/:id?', async (request, response) => {
                     path: 'assigned_to'
                 }, {
                     path: 'materials_prepared_by.employee'
+                }, {
+                    path: 'materials_prepared_by.incharge',
+                }, {
+                    path: 'prev_stage'
+                }, {
+                    path: 'next_stage'
                 }
                 ]
             }, {
                 path: 'incharge'
-            }])
+            }, {
+                path: 'closed_by'
+            },
+            ])
             return response.send(findAll)
         }
         let findParticular = await orderModel.findById(id).populate({
@@ -98,6 +146,12 @@ orderRouter.get('/order/:id?', async (request, response) => {
                 path: 'assigned_to'
             }, {
                 path: 'materials_prepared_by.employee'
+            }, {
+                path: 'materials_prepared_by.incharge',
+            }, {
+                path: 'prev_stage'
+            }, {
+                path: 'next_stage'
             }
             ]
         })
@@ -105,6 +159,8 @@ orderRouter.get('/order/:id?', async (request, response) => {
             return response.send(findParticular)
         return response.status(404).send("Not Found Order")
     } catch (error) {
+        console.error(error);
+
         return response.status(400).send(error)
     }
 })
@@ -144,6 +200,10 @@ orderRouter.get('/stage', async (request, response) => {
                 }]
             }, {
                 path: 'materials_prepared_by.employee',
+            }, {
+                path: 'materials_prepared_by.incharge',
+            }, {
+                path: 'next_stage'
             }
             ])
         console.log(assignedStages);
@@ -167,10 +227,17 @@ orderRouter.get('/stages/:id?', async (request, response) => {
             let allStages = await stageModel.find({}).populate([{
                 path: 'orderId',
                 populate: [{
-                    path: 'incharge'
+                    path: 'incharge.employee'
                 }]
             }, {
                 path: 'materials_prepared_by.employee',
+            }, {
+                path: 'next_stage'
+            }, {
+                path: 'materials_prepared_by.incharge',
+            },
+            {
+                path: 'prev_stage'
             }
             ])
             return response.send(allStages)
@@ -179,10 +246,17 @@ orderRouter.get('/stages/:id?', async (request, response) => {
             .populate([{
                 path: 'orderId',
                 populate: [{
-                    path: 'incharge'
+                    path: 'incharge.employee'
                 }]
             }, {
                 path: 'materials_prepared_by.employee',
+            }, {
+                path: 'next_stage'
+            }, {
+                path: 'materials_prepared_by.incharge',
+            },
+            {
+                path: 'prev_stage'
             }
             ])
         if (particularStage)
@@ -203,21 +277,36 @@ orderRouter.get('/inchargeOrders/:id', async (request, response) => {
         return response.status(400).send("Send the Id")
     }
     try {
-        let findOrderForIncharge = await orderModel.find({ incharge: id }).populate([{
+        let findOrderForIncharge = await orderModel.find({ incharge: { $elemMatch: { employee: id } } }).populate([{
             path: 'Stages',
             populate: [{
                 path: 'assigned_to'
             }, {
                 path: 'materials_prepared_by.employee'
+            }, {
+                path: 'materials_prepared_by.incharge',
             }
             ]
         }, {
             path: 'incharge'
+        }, {
+            path: 'closed_by'
         }])
         return response.send(findOrderForIncharge)
     } catch (error) {
         console.log(error);
         return response.send(error)
 
+    }
+})
+
+orderRouter.put('/stage', async (request, response) => {
+    let { body } = request
+    try {
+        const updateStages = await stageModel.findOneAndUpdate({ _id: body.id }, { $set: body }, { new: true })
+        return response.send(updateStages)
+    } catch (error) {
+        console.log(error);
+        return response.status(400).send(error)
     }
 })

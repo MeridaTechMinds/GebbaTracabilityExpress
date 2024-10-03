@@ -9,6 +9,9 @@ const machinerySchema = new mongoose.Schema({
     },
     machineryId: {
         type: String
+    },
+    activeStatus: {
+        type: Boolean
     }
 })
 

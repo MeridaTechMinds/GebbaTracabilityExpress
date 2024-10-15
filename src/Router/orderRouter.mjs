@@ -130,17 +130,20 @@ orderRouter.get('/order/:id?', async (request, response) => {
                     path: 'prev_stage'
                 }, {
                     path: 'next_stage'
-                }
+                },
                 ]
             }, {
-                path: 'incharge'
+                path: 'incharge',
+                populate: [{
+                    path: 'employee'
+                }]
             }, {
                 path: 'closed_by'
             },
             ])
             return response.send(findAll)
         }
-        let findParticular = await orderModel.findById(id).populate({
+        let findParticular = await orderModel.findById(id).populate([{
             path: 'Stages',
             populate: [{
                 path: 'assigned_to'
@@ -152,9 +155,11 @@ orderRouter.get('/order/:id?', async (request, response) => {
                 path: 'prev_stage'
             }, {
                 path: 'next_stage'
-            }
+            },
             ]
-        })
+        }, {
+            path: 'closed_by'
+        }])
         if (findParticular)
             return response.send(findParticular)
         return response.status(404).send("Not Found Order")
@@ -238,6 +243,8 @@ orderRouter.get('/stages/:id?', async (request, response) => {
             },
             {
                 path: 'prev_stage'
+            }, {
+                path: 'assigned_to'
             }
             ])
             return response.send(allStages)

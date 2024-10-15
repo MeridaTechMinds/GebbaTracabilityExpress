@@ -5,6 +5,9 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.String,
         required: true
     },
+    material_no: {
+        type: mongoose.Schema.Types.String,
+    },
     incharge:
         [{
             employee: {
@@ -46,6 +49,9 @@ const orderSchema = new mongoose.Schema({
     },
     closed_date: {
         type: mongoose.Schema.Types.Date,
+    },
+    closing_statement: {
+        type: mongoose.Schema.Types.String
     }
 })
 

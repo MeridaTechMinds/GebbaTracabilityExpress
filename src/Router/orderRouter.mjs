@@ -95,7 +95,7 @@ orderRouter.put('/order/:id', async (request, response) => {
         // Closed order
         if (body.status == 'close') {
             let mailObj = {
-                mail: process.env.MAIL,
+                mail: process.env.ADMINMAIL,
                 text: `Dear Admin
                 Order have been Closed.
                 Order Id : ${updateOrder.orderId},

@@ -209,7 +209,7 @@ userRouter.get('/adminAuth', async (request, response) => {
     const { body } = request
     let otp = Math.floor(Math.random() * 900000) + 100000;
     let mailOptions = {
-        mail: process.env.MAIL,
+        mail: process.env.ADMINMAIL,
         subject: `Employee creation from Sign Up ${getCurrentDate()} `,
         text: `Dear Admin\n 
         Employee creation process is happening in the signUp page use the OTP for the further process,
